@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthProvider, AuthContext } from '../context/AuthContext';
 import { login as apiLogin, register as apiRegister, getCurrentUser } from '../services/api';
@@ -54,12 +54,13 @@ const TestComponent = () => {
 
 describe('AuthContext', () => {
   beforeEach(() => {
-    localStorage.clear();
+    // Réinitialiser le store avant clear
+    localStorageMock.clear();
     jest.clearAllMocks();
   });
 
   test('should show loading initially when no token exists', async () => {
-    localStorage.getItem.mockReturnValue(null);
+    localStorageMock.getItem.mockReturnValue(null);
     getCurrentUser.mockRejectedValue(new Error('No token'));
 
     render(
@@ -76,7 +77,7 @@ describe('AuthContext', () => {
   });
 
   test('should load user from token on mount', async () => {
-    localStorage.getItem.mockImplementation((key) => {
+    localStorageMock.getItem.mockImplementation((key) => {
       if (key === 'access_token') return 'valid-token-123';
       return null;
     });
@@ -116,9 +117,9 @@ describe('AuthContext', () => {
 
     await waitFor(() => {
       expect(apiLogin).toHaveBeenCalledWith({ username: 'testuser', password: 'password' });
-      expect(localStorage.setItem).toHaveBeenCalledWith('access_token', 'new-access-token');
-      expect(localStorage.setItem).toHaveBeenCalledWith('refresh_token', 'new-refresh-token');
-      expect(localStorage.setItem).toHaveBeenCalledWith('username', 'testuser');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('access_token', 'new-access-token');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('refresh_token', 'new-refresh-token');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('username', 'testuser');
       expect(getCurrentUser).toHaveBeenCalledTimes(1);
       expect(screen.getByTestId('user')).toHaveTextContent('testuser');
     });
@@ -162,9 +163,9 @@ describe('AuthContext', () => {
     const user = userEvent.setup();
     
     // First login
-    localStorage.setItem('access_token', 'some-token');
-    localStorage.setItem('refresh_token', 'some-refresh');
-    localStorage.setItem('username', 'loggedinuser');
+    localStorageMock.setItem('access_token', 'some-token');
+    localStorageMock.setItem('refresh_token', 'some-refresh');
+    localStorageMock.setItem('username', 'loggedinuser');
     
     const mockUser = { id: 1, username: 'loggedinuser' };
     getCurrentUser.mockResolvedValue({ data: mockUser });
@@ -182,14 +183,14 @@ describe('AuthContext', () => {
     // Then logout
     await user.click(screen.getByTestId('logout-btn'));
 
-    expect(localStorage.removeItem).toHaveBeenCalledWith('access_token');
-    expect(localStorage.removeItem).toHaveBeenCalledWith('refresh_token');
-    expect(localStorage.removeItem).toHaveBeenCalledWith('username');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('access_token');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('refresh_token');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('username');
     expect(screen.getByTestId('user')).toHaveTextContent('No user');
   });
 
   test('should handle token expiration on mount', async () => {
-    localStorage.getItem.mockImplementation((key) => {
+    localStorageMock.getItem.mockImplementation((key) => {
       if (key === 'access_token') return 'expired-token';
       return null;
     });
@@ -204,9 +205,9 @@ describe('AuthContext', () => {
 
     await waitFor(() => {
       expect(getCurrentUser).toHaveBeenCalledTimes(1);
-      expect(localStorage.removeItem).toHaveBeenCalledWith('access_token');
-      expect(localStorage.removeItem).toHaveBeenCalledWith('refresh_token');
-      expect(localStorage.removeItem).toHaveBeenCalledWith('username');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('access_token');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('refresh_token');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('username');
       expect(screen.getByTestId('user')).toHaveTextContent('No user');
     });
   });
