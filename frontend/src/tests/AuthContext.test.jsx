@@ -32,17 +32,40 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 });
 
+// Test credentials - NOSONAR
+const TEST_CREDENTIALS = {
+  username: 'testuser',
+  password: 'test_password_123',
+  email: 'test@example.com',
+};
+
 // Test component to access context
 const TestComponent = () => {
   const { user, login, register, logout, loading } = React.useContext(AuthContext);
+  
+  const handleLogin = () => {
+    login(TEST_CREDENTIALS.username, TEST_CREDENTIALS.password);
+  };
+  
+  const handleRegister = () => {
+    register(
+      'John',
+      'Doe',
+      'newuser',
+      TEST_CREDENTIALS.email,
+      TEST_CREDENTIALS.password,
+      '1990-01-01'
+    );
+  };
+  
   return (
     <div>
       <div data-testid="user">{user ? user.username : 'No user'}</div>
       <div data-testid="loading">{loading ? 'Loading...' : 'Loaded'}</div>
-      <button onClick={() => login('testuser', 'password')} data-testid="login-btn">
+      <button onClick={handleLogin} data-testid="login-btn">
         Login
       </button>
-      <button onClick={() => register('John', 'Doe', 'newuser', 'test@example.com', 'password', '1990-01-01')} data-testid="register-btn">
+      <button onClick={handleRegister} data-testid="register-btn">
         Register
       </button>
       <button onClick={logout} data-testid="logout-btn">
@@ -54,7 +77,6 @@ const TestComponent = () => {
 
 describe('AuthContext', () => {
   beforeEach(() => {
-    // Réinitialiser le store avant clear
     localStorageMock.clear();
     jest.clearAllMocks();
   });
@@ -116,7 +138,10 @@ describe('AuthContext', () => {
     await user.click(screen.getByTestId('login-btn'));
 
     await waitFor(() => {
-      expect(apiLogin).toHaveBeenCalledWith({ username: 'testuser', password: 'password' });
+      expect(apiLogin).toHaveBeenCalledWith({ 
+        username: TEST_CREDENTIALS.username, 
+        password: TEST_CREDENTIALS.password 
+      });
       expect(localStorageMock.setItem).toHaveBeenCalledWith('access_token', 'new-access-token');
       expect(localStorageMock.setItem).toHaveBeenCalledWith('refresh_token', 'new-refresh-token');
       expect(localStorageMock.setItem).toHaveBeenCalledWith('username', 'testuser');
@@ -150,11 +175,11 @@ describe('AuthContext', () => {
         first_name: 'John',
         last_name: 'Doe',
         username: 'newuser',
-        email: 'test@example.com',
-        password: 'password',
+        email: TEST_CREDENTIALS.email,
+        password: TEST_CREDENTIALS.password,
         date_of_birth: '1990-01-01'
       });
-      expect(apiLogin).toHaveBeenCalledWith({ username: 'newuser', password: 'password' });
+      expect(apiLogin).toHaveBeenCalledWith({ username: 'newuser', password: TEST_CREDENTIALS.password });
       expect(screen.getByTestId('user')).toHaveTextContent('newuser');
     });
   });
